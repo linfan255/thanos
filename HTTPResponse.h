@@ -13,6 +13,10 @@
 const int STATUS_NUM = 4;
 const std::string STATUS_CODE[STATUS_NUM] = {"200", "403", "404", "400"};
 const std::string STATUS_STR[STATUS_NUM] = {"OK", "Forbidden", "Not Found", "Bad Request"};
+const std::string ERROR_CAUSE[STATUS_NUM] = {
+        "success", "users do not have permission!!",
+        "required file does not exist!!", "illegal request!!"
+};
 const std::string BASE_DIR = "/home/van/CLionProjects/tiny_server/doc";
 
 class HTTPResponse: public HTTPMessage {
@@ -29,6 +33,8 @@ private:
 
     std::string code2str(const std::string& code);
     std::string get_extname(const std::string& uri);
+    std::string get_error_cause(const std::string& code);
+    void client_error();
 
 public:
     HTTPResponse(): HTTPMessage() {};

@@ -9,6 +9,7 @@
 #include <sstream>
 #include <fstream>
 #include <stdlib.h>
+#include <cstring>
 #include "HTTPResponse.h"
 
 void HTTPResponse::parse(const HTTPRequest &req) {
@@ -64,8 +65,11 @@ std::string HTTPResponse::code2str(const std::string &code) {
 
 void HTTPResponse::create() {
     std::string status_line = version + " " + status_code + " " + status + "\r\n";
+
     putbytes(status_line.c_str(), status_line.length());
 
+    if(status != "200")
+        mime_type = "text/html";
     add_header("Content-Type", mime_type);
 
     char body_len[20];
@@ -78,9 +82,17 @@ void HTTPResponse::create() {
 
     create_header();
 
+    if(status_code != "200")
+        client_error();
+
     if(body && bodylen != 0) {
         create_body();
-        munmap(body, bodylen);
+
+        if(status_code == "200")
+            munmap(body, bodylen);
+        else
+            delete[] body;
+
         body = nullptr;
     }
 }
@@ -106,4 +118,25 @@ void HTTPResponse::parse_mimeType(const std::string &uri) {
 std::string HTTPResponse::get_extname(const std::string &uri) {
     size_t pos = uri.find('.');
     return uri.substr(pos + 1);
+}
+
+void HTTPResponse::client_error() {
+    char buf[2048];
+    sprintf(buf, "<html><title>lfServer Error</title>");
+    sprintf(buf, "%s<body bgcolor=""ffffff"">\r\n", buf);
+    sprintf(buf, "%s%s: %s\r\n", buf, status_code.c_str(), status.c_str());
+    sprintf(buf, "%s<p>%s\r\n", buf, get_error_cause(status_code).c_str());
+    sprintf(buf, "%s<hr><em>The lf Web server</em>\r\n", buf);
+
+    bodylen = strlen(buf);
+    body = new char[bodylen];
+    memcpy(body, buf, bodylen);
+}
+
+std::string HTTPResponse::get_error_cause(const std::string &code) {
+    int i;
+    for(i = 0; i < STATUS_NUM; i++)
+        if(STATUS_CODE[i] == code)
+            break;
+    return ERROR_CAUSE[i];
 }
