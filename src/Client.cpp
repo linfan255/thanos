@@ -6,7 +6,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/epoll.h>
-#include "Client.h"
+#include "../inc/Client.h"
 
 int Client::epollfd = -1;
 int Client::usr_cnt = 0;

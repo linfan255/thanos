@@ -3,8 +3,8 @@
 #include <cstring>
 #include <cassert>
 #include <sys/epoll.h>
-#include "threadpool.h"
-#include "Client.h"
+#include "../inc/threadpool.h"
+#include "../inc/Client.h"
 
 using namespace std;
 
