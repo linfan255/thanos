@@ -3,8 +3,10 @@ project(tiny_server)
 
 set(CMAKE_CXX_STANDARD 11)
 
-set(SOURCE_FILES src/main.cpp inc/locker.h inc/threadpool.h src/Buffer.cpp inc/Buffer.h src/HTTPMessage.cpp inc/HTTPMessage.h src/HTTPRequest.cpp inc/HTTPRequest.h src/HTTPResponse.cpp inc/HTTPResponse.h src/Client.cpp inc/Client.h)
+set(SOURCE_FILES src/main.cpp include/locker.h include/threadpool.h src/Buffer.cpp include/Buffer.h src/HTTPMessage.cpp include/HTTPMessage.h src/HTTPRequest.cpp include/HTTPRequest.h src/HTTPResponse.cpp include/HTTPResponse.h src/Client.cpp include/Client.h src/Configure.cpp include/Configure.h)
 add_executable(tiny_server ${SOURCE_FILES})
+
+set()
 
 find_package(Threads REQUIRED)
 target_link_libraries(tiny_server Threads::Threads)

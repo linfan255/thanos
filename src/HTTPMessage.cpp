@@ -2,7 +2,7 @@
 // Created by van on 17-9-4.
 //
 
-#include "../inc/HTTPMessage.h"
+#include "../include/HTTPMessage.h"
 
 /*根据headers成员中的值往缓冲区中填写信息*/
 void HTTPMessage::create_header() {

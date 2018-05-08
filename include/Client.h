@@ -5,7 +5,6 @@
 #ifndef TINY_SERVER_CLIENT_H
 #define TINY_SERVER_CLIENT_H
 
-
 #include <netinet/in.h>
 #include "HTTPResponse.h"
 

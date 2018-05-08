@@ -2,7 +2,7 @@
 // Created by van on 17-9-5.
 //
 
-#include "../inc/HTTPRequest.h"
+#include "../include/HTTPRequest.h"
 
 void HTTPRequest::create(char *src, size_t len) {
     putbytes(src, len);

@@ -4,7 +4,7 @@
 
 #include <cstring>
 #include <iostream>
-#include "../inc/Buffer.h"
+#include "../include/Buffer.h"
 
 std::string Buffer::getline() {
     std::string ret = "";

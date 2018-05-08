@@ -3,8 +3,8 @@
 #include <cstring>
 #include <cassert>
 #include <sys/epoll.h>
-#include "../inc/threadpool.h"
-#include "../inc/Client.h"
+#include "../include/threadpool.h"
+#include "../include/Client.h"
 
 using namespace std;
 
@@ -21,7 +21,6 @@ int main() {
     Client* usrs = new Client[MAX_CLIENT];
     assert(usrs);
 
-    int user_count = 0;
     int listenfd = socket(AF_INET, SOCK_STREAM, 0);
     assert(listenfd >= 0);
 

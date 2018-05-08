@@ -5,7 +5,6 @@
 #ifndef TINY_SERVER_LOCKER_H
 #define TINY_SERVER_LOCKER_H
 
-
 #include <semaphore.h>
 #include <pthread.h>
 
