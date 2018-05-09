@@ -3,7 +3,7 @@
 //
 
 #include <fstream>
-#include "../include/Configure.h"
+#include "configure.h"
 
 namespace tiny_server {
 
@@ -56,6 +56,7 @@ bool Configure::init_config(const char *file_path) {
     std::string value = "";
     uint64_t pos = 0; // 配置文件中分割符的位置
 
+    // TODO : 跳过空行 跳过注释
     while (getline(fin, line)) {
         key.clear();
         value.clear();

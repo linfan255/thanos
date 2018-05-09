@@ -10,7 +10,7 @@
 #include <fstream>
 #include <stdlib.h>
 #include <cstring>
-#include "../include/HTTPResponse.h"
+#include "http_response.h"
 
 void HTTPResponse::parse(const HTTPRequest &req) {
     version = req.get_version();

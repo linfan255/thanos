@@ -8,7 +8,7 @@
 
 #include <map>
 #include <sys/mman.h>
-#include "Buffer.h"
+#include "buffer.h"
 
 class HTTPMessage: public Buffer {
 protected:

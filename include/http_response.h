@@ -6,9 +6,9 @@
 #define TINY_SERVER_HTTPRESPONSE_H
 
 
-#include "HTTPMessage.h"
+#include "http_message.h"
 #include <iostream>
-#include "HTTPRequest.h"
+#include "http_request.h"
 
 const int STATUS_NUM = 4;
 const std::string STATUS_CODE[STATUS_NUM] = {"200", "403", "404", "400"};

@@ -70,6 +70,4 @@ private:
 
 }
 
-
-
 #endif //TINY_SERVER_CONFIGURE_H

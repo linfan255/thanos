@@ -6,7 +6,7 @@
 #define TINY_SERVER_CLIENT_H
 
 #include <netinet/in.h>
-#include "HTTPResponse.h"
+#include "http_response.h"
 
 const int BUFFER_SIZE = 2048;
 

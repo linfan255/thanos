@@ -6,7 +6,7 @@
 #define TINY_SERVER_HTTPREQUEST_H
 
 #include <string>
-#include "HTTPMessage.h"
+#include "http_message.h"
 
 
 class HTTPRequest: public HTTPMessage {
