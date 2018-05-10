@@ -81,6 +81,10 @@ bool ConfigureParser::_str_format(std::string* str) {
 
 bool ConfigureParser::parse(const std::string& file_path,
         std::map<std::string, std::string>* conf_pairs) {
+    if (conf_pairs == nullptr) {
+        return false;
+    }
+
     std::ifstream fin(file_path.c_str());
     if (!fin) {
         return false;
