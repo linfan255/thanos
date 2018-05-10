@@ -122,6 +122,7 @@ bool ConfigureParser::parse(const std::string& file_path,
 
         (*conf_pairs)[key] = value;
     }
+    fin.close();
     return true;
 }
 
