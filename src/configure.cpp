@@ -5,7 +5,7 @@
 #include <fstream>
 #include "configure.h"
 
-namespace tiny_server {
+namespace thanos {
 
 ConfigureValueType::ConfigureValueType() : _conf_value("") {}
 
@@ -143,4 +143,4 @@ ConfigureValueType Configure::operator[](const std::string& conf_key) {
     }
 }
 
-}
+} // namespace thanos

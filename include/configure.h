@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <iostream>
 
-namespace tiny_server {
+namespace thanos {
 
 class ConfigureValueType {
 public:
