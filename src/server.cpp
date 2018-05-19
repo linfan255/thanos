@@ -135,7 +135,9 @@ bool Server::init(const std::string& conf_path) {
 
 bool Server::uninit() {
     for (auto it = _connections.begin(); it != _connections.end(); ++it) {
-        delete (it->second);
+        if (it->second != nullptr) {
+            delete (it->second);
+        }
     }
 
     if (_listenfd != -1 && close(_listenfd) == -1) {
@@ -303,4 +305,4 @@ bool Server::_handle_writable(const epoll_event& ev) {
     return true;
 }
 
-}
+} // namepace thanos
