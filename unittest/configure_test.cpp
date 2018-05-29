@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 #include "configure.h"
 
-namespace tiny_server {
+namespace thanos {
 
 class ConfigureTest : public ::testing::Test {
 public:

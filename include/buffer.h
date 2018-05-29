@@ -1,37 +1,34 @@
-//
-// Created by van on 17-9-4.
-//
-
-#ifndef TINY_SERVER_BUFFER_H
-#define TINY_SERVER_BUFFER_H
-
+#ifndef _THANOS_BUFFER
+#define _THANOS_BUFFER
 
 #include <vector>
 #include <string>
+#include <stdint.h>
+#include "common_type.h"
+
+namespace thanos {
 
 class Buffer {
-private:
-    std::vector<char> buf;
-    size_t read_pos;
-
 public:
-    Buffer(): read_pos(0) {};
-    virtual ~Buffer() = default;
+    Buffer();
+    ~Buffer();
 
-    std::string getline();
-    void putbytes(const char* src, ssize_t len);
-    std::string getUntil(char delim);
+    uint64_t size() const;
+    bool empty() const;
+    void clear();
 
-    const void* get_read_addr() const { return &buf[read_pos]; }
-    const void* get_buffer_addr() const {
-        if(buf.empty()) return nullptr;
-        return &buf[0];
-    }
-    size_t get_read_pos() const { return read_pos; }
-    size_t size() const { return buf.size(); }
+    void push_nbytes(char* buffer, uint64_t nbytes);
+    void roll_nbytes(uint64_t nbytes);
 
-    void clear() { buf.clear(); read_pos = 0; }
+    BufferReadStatus get_line(std::string* line);
+    void* get_write_addr() const;
+
+private:
+    uint64_t _write_pos;
+    uint64_t _read_pos;
+    std::vector<char> _buffer;
 };
 
+}
 
-#endif //TINY_SERVER_BUFFER_H
+#endif

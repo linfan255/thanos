@@ -1,3 +1,6 @@
+#ifndef _THANOS_SERVER
+#define _THANOS_SERVER
+
 #include <map>
 #include <string>
 #include "configure.h"
@@ -50,3 +53,5 @@ private:
 };
 
 }
+
+#endif

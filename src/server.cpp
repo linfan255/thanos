@@ -1,9 +1,15 @@
 #include <stdexcept>
 #include <memory>
 #include <new>
+
 #include <unistd.h>
 #include <sys/epoll.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <fcntl.h>
+
 #include "easylogging++.h"
+#include "fd_handler.h"
 #include "server.h"
 
 namespace thanos {
@@ -14,61 +20,6 @@ Server::Server() :
         _port(-1), _backlog(-1), _max_events(-1) {}
 
 Server::~Server() = default;
-
-int Server::_set_nonblock(int fd) {
-    int old_opt = fcntl(fd, F_GETFL);
-    if (old_opt == -1) {
-        LOG(WARNING) << "[Server::_set_nonblock]: get fcntl failed";
-        return -1;
-    }
-    int new_opt = old_opt | O_NONBLOCK;
-    if (fcntl(fd, F_SETFL, new_opt) == -1) {
-        LOG(WARNING) << "[Server::_set_nonblock]: set fcntl failed";
-        return -1;
-    }
-    return old_opt;
-}
-
-bool Server::_add_fd(int fd, bool one_shot) {
-    epoll_event event;
-    event.data.fd = fd;
-    event.events = EPOLLIN | EPOLLET | EPOLLRDHUP;
-    if (one_shot) {
-        event.events |= EPOLLONESHOT;
-    }
-    if (epoll_ctl(_epollfd, EPOLL_CTL_ADD, fd, &event) == -1) {
-        LOG(WARNING) << "[Server::_add_fd]: epoll_ctl failed";
-        return false;
-    }
-    if (_set_nonblock(fd) == -1) {
-        LOG(WARNING) << "[Server::_add_fd]: _set_nonblock failed";
-        return false;
-    }
-    return true;
-}
-
-bool Server::_remove_fd(int fd) {
-    if (epoll_ctl(_epollfd, EPOLL_CTL_DEL, fd, 0) == -1) {
-        LOG(WARNING) << "[Server::_remove_fd]: _remove_fd failed";
-        return false;
-    }
-    if (close(fd) == -1) {
-        LOG(WARNING) << "[Server::_remove_fd]: close fd failed";
-        return false;
-    }
-    return true;
-}
-
-bool Server::_mod_fd(int fd, int ev) {
-    epoll_event event;
-    event.data.fd = fd;
-    event.events = ev | EPOLLET | EPOLLONESHOT | EPOLLRDHUP;
-    if (epoll_ctl(_epollfd, EPOLL_CTL_MOD, fd, &event) == -1) {
-        LOG(WARNING) << "[Server::_mod_fd]: epoll_ctl failed";
-        return false;
-    }
-    return true;
-}
 
 bool Server::_listen_at_port() {
     _listenfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -112,6 +63,7 @@ bool Server::_close_connection(int fd) {
         return false;
     }
     delete _connections[fd];
+    _connections[fd] = nullptr;
 }
 
 bool Server::init(const std::string& conf_path) {
@@ -171,9 +123,11 @@ bool Server::run() {
         LOG(WARNING) << "[Server::run]: epoll_create failed";
         return false;
     }
+
+    Connection::set_epollfd(_epollfd);
     
-    if (!_add_fd(_listenfd, false)) {
-        LOG(WARNING) << "[Server::run]: _add_fd failed";
+    if (!FdHandler::add_fd(_epollfd, _listenfd, false)) {
+        LOG(WARNING) << "[Server::run]: add_fd failed";
         return false;
     }
 
@@ -241,19 +195,20 @@ bool Server::_handle_accept() {
     if (_connections.find(connfd) == _connections.end() ||
             _connections[connfd] == nullptr) {
         // 描述符无对应的连接，或者连接池中无该描述符
+        // 使用prototype模式来实例化
         _connections[connfd] = Connection::new_instance();
         if (_connections[connfd] == nullptr) {
             LOG(WARNING) << "[Server::_handle_accept]: alloc memory failed";
             return false;
         }
     } else {
-        // 连接池中存在该描述符对应的连接
-        _connections->reset(); // 将旧有的连接清理成初始状态
+        // 连接池中存在该描述符对应的连接, 就将其关闭
+        _connections[connfd]->connection_close(); 
     }
 
-    if (!_connections[connfd].connection_init(connfd, client_addr)) {
-        LOG(WARNING) << "[Server::_handle_accept]: init connect failed, connfd="
-                << connfd;
+    _connections[connfd]->set_connfd(connfd); 
+    if (!FdHandler::add_fd(_epollfd, connfd, true)) {
+        LOG(WARNING) << "[Server::_handle_accept]: add_fd failed";
         return false;
     }
     return true;
