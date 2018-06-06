@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include "connection.h"
 #include "fd_handler.h"
+#include "easylogging++.h"
 
 namespace thanos {
 
@@ -80,12 +81,12 @@ bool Connection::connection_write() {
 
     int64_t ret = 0;
     while (true) {
-        if (_write_buffer.get_write_addr() == nullptr) {
-            LOG(WARNING) << "[Connection::connection_write]: get_write_addr failed";
+        if (_write_buffer.current_addr() == nullptr) {
+            LOG(WARNING) << "[Connection::connection_write]: get current_addr failed";
             return false;
         }
 
-        ret = send(_connfd, _write_buffer.get_write_addr(), _write_buffer.size(), 0);
+        ret = send(_connfd, _write_buffer.current_addr(), _write_buffer.size(), 0);
 
         if (ret == -1 && errno != EINTR) {
             LOG(WARNING) << "[Connection::connection_write]: send failed";

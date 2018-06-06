@@ -47,7 +47,7 @@ void Connection::_add_prototype(Connection* conn) {
 }
 
 Connection* Connection::new_instance() {
-    return _prototype->clone();
+    return _prototype->_clone();
 }
 
 void Connection::set_epollfd(int epollfd) {

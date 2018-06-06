@@ -8,6 +8,9 @@
 
 namespace thanos {
 
+// 写缓存相关成员：push_nbytes
+// 读缓存相关成员：get_line 
+//   current_addr roll_nbytes _cursor等成员都是用来配合读操作
 class Buffer {
 public:
     Buffer();
@@ -21,11 +24,10 @@ public:
     void roll_nbytes(uint64_t nbytes);
 
     BufferReadStatus get_line(std::string* line);
-    void* get_write_addr() const;
+    void* current_addr() const;
 
 private:
-    uint64_t _write_pos;
-    uint64_t _read_pos;
+    uint64_t _cursor; // 记录当前读的位置
     std::vector<char> _buffer;
 };
 

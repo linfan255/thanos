@@ -4,7 +4,7 @@
 
 namespace thanos {
 
-Buffer::Buffer() : _buffer(), _read_pos(0), _write_pos(0) {}
+Buffer::Buffer() : _buffer(), _cursor(0) {}
 
 Buffer::~Buffer() = default;
 
@@ -17,20 +17,20 @@ void Buffer::push_nbytes(char* buffer, uint64_t nbytes) {
 }
 
 void Buffer::roll_nbytes(uint64_t nbytes) {
-    _write_pos += nbytes;
+    _cursor += nbytes;
 }
 
-void* Buffer::get_write_addr() const {
-    if (_buffer.empty() || _write_pos >= _buffer.size()) {
+void* Buffer::current_addr() const {
+    if (_buffer.empty() || _cursor >= _buffer.size()) {
+        LOG(WARNING) << "[Buffer::current_addr]: _cursor wrong position";
         return nullptr;
     }
-    char* addr = const_cast<char*>(&_buffer[_write_pos]);
+    char* addr = const_cast<char*>(&_buffer[_cursor]);
     return reinterpret_cast<void*>(addr);
 }
 
 void Buffer::clear() {
-    _read_pos = 0;
-    _write_pos = 0;
+    _cursor = 0;
     _buffer.clear();
 }
 
@@ -43,12 +43,12 @@ BufferReadStatus Buffer::get_line(std::string* line) {
         LOG(WARNING) << "[Buffer::get_line]: nullptr";
         return BufferReadStatus::READ_ERROR;
     }
-    if (_read_pos > _buffer.size()) {
-        LOG(WARNING) << "[Buffer::get_line]: _read_pos out of bound";
+    if (_cursor > _buffer.size()) {
+        LOG(WARNING) << "[Buffer::get_line]: _cursor out of bound";
         line->clear();
         return BufferReadStatus::READ_OUTBOUND;
     }
-    if (_read_pos == _buffer.size()) {
+    if (_cursor == _buffer.size() || _buffer.empty()) {
         line->clear();
         return BufferReadStatus::READ_END;
     }
@@ -58,7 +58,7 @@ BufferReadStatus Buffer::get_line(std::string* line) {
     bool read_new_line = false;
 
     // try to find new line's end
-    for (i = _read_pos; i < len - 1; ++i) {
+    for (i = _cursor; i < len - 1; ++i) {
         if (_buffer[i] == 13 && _buffer[i + 1] == 10) {
             read_new_line = true;
             break;
@@ -69,16 +69,16 @@ BufferReadStatus Buffer::get_line(std::string* line) {
         line->clear();
         return BufferReadStatus::READ_FAIL;
     }
-    // _read_pos may be equal to i, this will set line to be a empty string
-    line->assign(&_buffer[_read_pos], &_buffer[i]);
+    // _cursor may be equal to i, this will set line to be a empty string
+    line->assign(&_buffer[_cursor], &_buffer[i]);
 
     // ignore the \r and \n
-    for (_read_pos = i; _read_pos < len; ++_read_pos) {
-        if (_buffer[_read_pos] != 13 && _buffer[_read_pos] != 10) {
+    for (_cursor = i; _cursor < len; ++_cursor) {
+        if (_buffer[_cursor] != 13 && _buffer[_cursor] != 10) {
             break;
         }
     }
-    if (_read_pos == len) {
+    if (_cursor == len) {
         // reach the buffer's end
         return BufferReadStatus::READ_END;
     }

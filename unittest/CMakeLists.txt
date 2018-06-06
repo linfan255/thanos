@@ -6,8 +6,15 @@ set(BUFFER_TEST_SOURCE
         ${PROJECT_SOURCE_DIR}/src/buffer.cpp
         buffer_test.cpp)
 
+set(THREADPOOL_TEST_SOURCE
+        ${PROJECT_SOURCE_DIR}/src/easylogging++.cc
+        ${PROJECT_SOURCE_DIR}/src/locker.cpp
+        threadpool_test.cpp)
+
 add_executable(configure_test ${CONFIGURE_TEST_SOURCE})
 target_link_libraries(configure_test gtest gtest_main)
 
 add_executable(buffer_test ${BUFFER_TEST_SOURCE})
 target_link_libraries(buffer_test gtest gtest_main)
+
+add_executable(threadpool_test ${THREADPOOL_TEST_SOURCE})

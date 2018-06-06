@@ -4,6 +4,7 @@
 
 #include <fstream>
 #include "configure.h"
+#include "easylogging++.h"
 
 namespace thanos {
 
