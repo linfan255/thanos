@@ -1,13 +1,12 @@
 #include <stdexcept>
 #include <memory>
 #include <new>
-
+#include <iostream>
 #include <unistd.h>
 #include <sys/epoll.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <fcntl.h>
-
 #include "easylogging++.h"
 #include "fd_handler.h"
 #include "server.h"
@@ -40,10 +39,11 @@ bool Server::_listen_at_port() {
         return false;
     }
 
-    if (listen(_listenfd, _back_log) == -1) {
+    if (listen(_listenfd, _backlog) == -1) {
         LOG(WARNING) << "[Server::_listen_at_port]: listen failed";
         return false;
     }
+    LOG(INFO) << "listen at port:" << _port;
     return true;
 }
 
@@ -78,10 +78,19 @@ bool Server::init(const std::string& conf_path) {
         _port = _conf["PORT"].to_int32();
         _backlog = _conf["BACKLOG"].to_int32();
         _max_events = _conf["MAX_EVENTS"].to_int32();
+        _max_thread_num = _conf["MAX_THREAD_NUM"].to_int32();
+        _max_requests = _conf["MAX_REQUESTS"].to_int32();
     } catch (std::exception err) {
         LOG(WARNING) << err.what();
         return false;
     }
+
+    // 3、初始化线程池
+    if (!_threadpool.init(_max_thread_num, _max_requests)) {
+        LOG(WARNING) << "[Server::init]: _threadpool.init failed";
+        return false;
+    }
+    
     return true;
 }
 
@@ -100,7 +109,13 @@ bool Server::uninit() {
         LOG(WARNING) << "[Server::uninit]: close _epollfd failed";
         return false;
     }
+    LOG(INFO) << "[Server::uninit]: clear resource success";
     return true;
+}
+
+void Server::ask_to_quit() {
+    _is_running = false;
+    _threadpool.ask_to_quit();
 }
 
 bool Server::run() {
@@ -130,6 +145,8 @@ bool Server::run() {
         LOG(WARNING) << "[Server::run]: add_fd failed";
         return false;
     }
+
+    _is_running = true;
 
     while (_is_running) {
         int event_num = epoll_wait(_epollfd, events, _max_events, -1);
@@ -182,10 +199,11 @@ bool Server::_handle_event(const epoll_event& ev) {
 }
 
 bool Server::_handle_accept() {
+    LOG(DEBUG) << "handle new accept";
+
     sockaddr_in client_addr;
     socklen_t addr_len = sizeof(client_addr);
-    int connfd = accept(_listenfd, reinterpret_cast<sockaddr*>(&client_addr),
-            &client_len);
+    int connfd = accept(_listenfd, reinterpret_cast<sockaddr*>(&client_addr), &addr_len);
     if (connfd == -1) {
         LOG(WARNING) << "[Server::_handle_accept]: accept failed";
         return false;
@@ -215,6 +233,8 @@ bool Server::_handle_accept() {
 }
 
 bool Server::_handle_readable(const epoll_event& ev) {
+    LOG(DEBUG) << "handle readable";
+
     int sockfd = ev.data.fd;
     // 判断发生事件的描述符是否在连接池当中
     if (_connections.find(sockfd) == _connections.end() ||
@@ -231,7 +251,7 @@ bool Server::_handle_readable(const epoll_event& ev) {
         }
         return false;
     }
-    if (!_threadpool.add_connection(_connection[sockfd])) {
+    if (!_threadpool.append(_connections[sockfd])) {
         LOG(WARNING) << "[Server::_handle_readable]: threadpool add_connection failed";
         if (!_close_connection(sockfd)) {
             LOG(WARNING) << "[Server::_handle_readable]: _close_connection failed";
@@ -242,6 +262,8 @@ bool Server::_handle_readable(const epoll_event& ev) {
 }
     
 bool Server::_handle_writable(const epoll_event& ev) {
+    LOG(DEBUG) << "handle writable";
+
     int sockfd = ev.data.fd;
     if (_connections.find(sockfd) == _connections.end() ||
             _connections[sockfd] == nullptr) {
@@ -255,6 +277,12 @@ bool Server::_handle_writable(const epoll_event& ev) {
         if (!_close_connection(sockfd)) {
             LOG(WARNING) << "[Server::_handle_writable]: _close_connection failed";
         }
+        return false;
+    }
+
+    if (!_connections[sockfd]->connection_close()) {
+        // 如果连接是长连接，则在connection_close中立即返回，并不关闭。
+        LOG(WARNING) << "[Server::_handle_writable]: connection close failed";
         return false;
     }
     return true;

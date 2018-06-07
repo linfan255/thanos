@@ -29,6 +29,7 @@ public:
 
     bool append(T* req);
     void run();
+    void ask_to_quit();
     // 用于初始化线程池
     // @max_thread_num: 线程池的工作线程个数
     // @max_requests: 请求队列中最多允许的等待请求队列
@@ -45,14 +46,14 @@ private:
     std::queue<T*> _req_que;  // 请求队列
     Locker _que_lock;         // 请求队列属于竞争资源，需要锁来保护
     Sem _que_stat;            // 信号量用于在请求队列非空时唤醒工作线程
-    bool _is_run;             // 是否在运行
+    bool _is_running;             // 是否在运行
 };
 
 template <typename T>
 ThreadPool<T>::ThreadPool() : 
         _max_thread_num(0), _max_requests(0), 
         _work_threads(nullptr), _req_que(),
-        _que_lock(), _que_stat(), _is_run(false) {}
+        _que_lock(), _que_stat(), _is_running(false) {}
 
 template <typename T>
 ThreadPool<T>::~ThreadPool() {
@@ -60,11 +61,16 @@ ThreadPool<T>::~ThreadPool() {
 }
 
 template <typename T>
+void ThreadPool<T>::ask_to_quit() {
+    _is_running = false;
+}
+
+template <typename T>
 void ThreadPool<T>::_destroy() {
     if (_work_threads != nullptr) {
         delete [] _work_threads;
     }
-    _is_run = false;
+    _is_running = false;
 }
 
 template <typename T>
@@ -96,7 +102,7 @@ bool ThreadPool<T>::init(uint32_t max_thread_num, uint64_t max_requests) {
             return false;
         }
     }
-    _is_run = true;
+    _is_running = true;
     return true;
 }
 
@@ -126,7 +132,7 @@ bool ThreadPool<T>::append(T* req) {
 
 template <typename T>
 void ThreadPool<T>::run() {
-    while (_is_run) {
+    while (_is_running) {
         _que_stat.wait();
 
         if (!_que_lock.lock()) {

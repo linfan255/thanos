@@ -8,6 +8,47 @@ Buffer::Buffer() : _buffer(), _cursor(0) {}
 
 Buffer::~Buffer() = default;
 
+Buffer::Buffer(const Buffer& other) : 
+        _buffer(other._buffer), 
+        _cursor(other._cursor) {}
+
+Buffer& Buffer::operator=(const Buffer& other) {
+    if (this == &other) {
+        return *this;
+    }
+    _cursor = other._cursor;
+    _buffer = other._buffer;
+    return *this;
+}
+
+Buffer::Buffer(Buffer&& other) :
+        _buffer(std::move(other._buffer)),
+        _cursor(std::move(other._cursor)) {}
+
+Buffer& Buffer::operator=(Buffer&& other) {
+    if (this == &other) {
+        return *this;
+    }
+    _cursor = std::move(other._cursor);
+    _buffer = std::move(other._buffer);
+    return *this;
+}
+
+bool Buffer::dump(Buffer* other) {
+    if (other == nullptr) {
+        LOG(WARNING) << "[Buffer::dump]: dump to no where";
+        return false;
+    }
+
+    if (this == other) {
+        return true;
+    }
+
+    other->_cursor = std::move(_cursor);
+    other->_buffer = std::move(_buffer);
+    return true;
+}
+
 uint64_t Buffer::size() const {
     return _buffer.size();
 }

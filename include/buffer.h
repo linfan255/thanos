@@ -16,9 +16,16 @@ public:
     Buffer();
     ~Buffer();
 
+    Buffer(const Buffer& other);
+    Buffer& operator=(const Buffer& other);
+
+    Buffer(Buffer&& other);
+    Buffer& operator=(Buffer&& other);
+
     uint64_t size() const;
     bool empty() const;
     void clear();
+    bool dump(Buffer* other);
 
     void push_nbytes(char* buffer, uint64_t nbytes);
     void roll_nbytes(uint64_t nbytes);

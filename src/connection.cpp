@@ -9,6 +9,25 @@
 
 namespace thanos {
 
+Connection* Connection::_prototype = nullptr;
+int Connection::_epollfd = -1;
+
+void Connection::_add_prototype(Connection* conn) {
+    _prototype = conn;
+}
+
+Connection* Connection::new_instance() {
+    return _prototype->_clone();
+}
+
+void Connection::set_epollfd(int epollfd) {
+    _epollfd = epollfd;
+}
+
+int Connection::get_epollfd() {
+    return _epollfd;
+}
+
 Connection::Connection() : _read_buffer(), _write_buffer(), _connfd(-1) {}
 
 Connection::~Connection() = default;
@@ -35,6 +54,7 @@ bool Connection::connection_close() {
         LOG(WARNING) << "[Connection::connection_close]: _clear() failed";
         return false;
     }
+    LOG(INFO) << "[Connection::connection_close]: close connection success";
     return true;
 }
 
@@ -56,6 +76,7 @@ bool Connection::connection_read() {
         ret = recv(_connfd, buffer, buffer_size, 0);
 
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            LOG(DEBUG) << "read EAGIN or EWOULDBLOCK";
             break;
         }
 
@@ -100,6 +121,57 @@ bool Connection::connection_write() {
             return false;
         }
         _write_buffer.roll_nbytes(ret);
+    }
+
+    _read_buffer.clear();
+    _write_buffer.clear();
+    return true;
+}
+
+bool Connection::_dump_read(Buffer* other) {
+    if (other == nullptr) {
+        LOG(WARNING) << "[Connection::_dump_read]: dump read_buffer to no where";
+        return false;
+    }
+    if (!_read_buffer.dump(other)) {
+        LOG(WARNING) << "[Connection::_dump_read]: dump read_buffer failed";
+        return false;
+    }
+    return true;
+}
+
+bool Connection::_dump_write(Buffer* other) {
+    if (other == nullptr) {
+        LOG(WARNING) << "[Connection::_dump_write]: dump write_buffer to no where";
+        return false;
+    }
+    if (!_write_buffer.dump(other)) {
+        LOG(WARNING) << "[Connection::_dump_write]: dump write_buffer failed";
+        return false;
+    }
+    return true;
+}
+
+bool Connection::_dump_to_read(Buffer& other) {
+    if (!other.dump(&_read_buffer)) {
+        LOG(WARNING) << "[Connection::_dump_to_read]: dump to read failed";
+        return false;
+    }
+    return true;
+}
+
+bool Connection::_dump_to_write(Buffer& other) {
+    if (!other.dump(&_write_buffer)) {
+        LOG(WARNING) << "[Connection::_dump_to_write]: dump to write failed";
+        return false;
+    }
+    return true;
+}
+
+bool Connection::_process_done() {
+    if (!FdHandler::mod_fd(_epollfd, _connfd, EPOLLOUT)) {
+        LOG(WARNING) << "[Connection::_process_done]: mod_fd";
+        return false;
     }
     return true;
 }
