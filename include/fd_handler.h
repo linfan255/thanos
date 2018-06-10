@@ -1,5 +1,5 @@
-#ifndef _THANOS_FDHANDLER
-#define _THANOS_FDHANDLER
+#ifndef _THANOS_FDHANDLER_H
+#define _THANOS_FDHANDLER_H
 
 #include <unistd.h>
 #include <fcntl.h>

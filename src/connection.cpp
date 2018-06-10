@@ -10,7 +10,18 @@
 namespace thanos {
 
 Connection* Connection::_prototype = nullptr;
+
 int Connection::_epollfd = -1;
+
+std::string Connection::root_dir = "";
+
+std::string& Connection::_get_root_dir() {
+    return _root_dir; 
+}
+
+void Connection::init_root_dir(const std::string& root_dir) {
+    _root_dir = root_dir;
+}
 
 void Connection::_add_prototype(Connection* conn) {
     _prototype = conn;

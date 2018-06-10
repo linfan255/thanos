@@ -1,5 +1,5 @@
-#ifndef _THANOS_BUFFER
-#define _THANOS_BUFFER
+#ifndef _THANOS_BUFFER_H
+#define _THANOS_BUFFER_H
 
 #include <vector>
 #include <string>

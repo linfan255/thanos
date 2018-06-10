@@ -1,6 +1,7 @@
-#ifndef _THANOS_CONNECTION
-#define _THANOS_CONNECTION
+#ifndef _THANOS_CONNECTION_H
+#define _THANOS_CONNECTION_H
 
+#include <string>
 #include "buffer.h"
 
 namespace thanos {
@@ -10,6 +11,7 @@ public:
     Connection();
     virtual ~Connection();
 
+    static void init_root_dir(const std::string& root_dir);
     static Connection* new_instance();
     static int get_epollfd();
     static void set_epollfd(int epollfd);
@@ -27,6 +29,8 @@ public:
 
 protected:
     static void _add_prototype(Connection* conn);
+    static std::string& _get_root_dir();
+
     virtual Connection* _clone() = 0; // prototype模式所需，用于返回实例化的对象指针
     virtual bool _clear() = 0; // 用于告诉框架子类在断开连接后需要进行哪些处理
     bool _process_done();      // 告诉框架业务逻辑处理完毕，可以写了
@@ -40,6 +44,7 @@ protected:
 private:
     static Connection* _prototype;
     static int _epollfd;
+    static std::string _root_dir;
 
     Buffer _read_buffer;
     Buffer _write_buffer;

@@ -2,8 +2,8 @@
 // Created by van on 18-5-7.
 //
 
-#ifndef TINY_SERVER_CONFIGURE_H
-#define TINY_SERVER_CONFIGURE_H
+#ifndef _THANOS_CONFIGURE_H 
+#define _THANOS_CONFIGURE_H 
 
 #include <map>
 #include <string>

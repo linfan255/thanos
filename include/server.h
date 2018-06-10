@@ -4,8 +4,8 @@
 //   1、init传入配置文件的路径
 //   2、启动run
 //   3、调用uninit在退出后清理有关资源
-#ifndef _THANOS_SERVER
-#define _THANOS_SERVER
+#ifndef _THANOS_SERVER_H
+#define _THANOS_SERVER_H
 
 #include <map>
 #include <string>
