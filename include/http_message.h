@@ -19,6 +19,8 @@ public:
     HTTPMessage(HTTPMessage&& other);
     HTTPMessage& operator=(HTTPMessage&& other);
 
+    void clear();
+
     // get
     const std::map<std::string, std::string>& get_headers() const;
     char* get_body() const;
@@ -50,6 +52,7 @@ public:
     HTTPRequest(HTTPRequest&& other);
     HTTPRequest& operator=(HTTPRequest&& other);
 
+    void clear();
     // get
     const std::string& get_method() const;
     const std::string& get_url() const;
@@ -79,6 +82,8 @@ public:
     // move ctor & assign
     HTTPResponse(HTTPResponse&& other);
     HTTPResponse& operator=(HTTPResponse&& other);
+
+    void clear();
 
     // get
     const std::string& get_version() const;

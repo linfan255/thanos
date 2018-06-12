@@ -46,6 +46,8 @@ private:
     static int _epollfd;
     static std::string _root_dir;
 
+    void _reset();
+
     Buffer _read_buffer;
     Buffer _write_buffer;
     int _connfd;

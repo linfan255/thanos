@@ -35,7 +35,7 @@ void HTTPConnection::_init_mime() {
     std::string mime_type = "";
 
     std::stringstream ss;
-    std::ifstream mime_file("/home/van/CLionProjects/lfServer/mime.txt");
+    std::ifstream mime_file("/home/van/workspace/thanos/mime.txt");
     std::string line = "";
 
     while (std::getline(mime_file, line)) {
@@ -46,7 +46,12 @@ void HTTPConnection::_init_mime() {
     }
 }
 
-bool HTTPConnection::_clear() {}
+bool HTTPConnection::_clear() {
+    _request.clear();
+    _response.clear();
+    _parse_status = ParseStatus::PARSE_REQUEST_LINE;    
+    return true;
+}
 
 void HTTPConnection::process() {
     Buffer read_buffer;
@@ -61,7 +66,7 @@ void HTTPConnection::process() {
     }
 
     // DEBUG
-    read_buffer.show_content();
+    //read_buffer.show_content();
 
     // 2、解析请求
     _parse_request(read_buffer);
@@ -305,6 +310,9 @@ bool HTTPConnection::_parse_request_line(const std::string& line) {
         return false;
     }
 
+    LOG(DEBUG) << "request line=" << line;
+    LOG(DEBUG) << "uri=" << url;
+
     _request.set_method(method);
     _request.set_url(url);
     _request.set_version(version);
@@ -382,6 +390,8 @@ HTTPCode HTTPConnection::_handle_get() {
         file_path += "homepage.html";
     }
 
+    LOG(DEBUG) << "file_path:" << file_path << ";";
+
     struct stat file_stat;
     if (stat(file_path.c_str(), &file_stat) < 0) {
         LOG(DEBUG) << "connot find this file:*" << file_path << "*";
@@ -426,6 +436,8 @@ HTTPCode HTTPConnection::_handle_get() {
     _response.set_version(_request.get_version());
     _response.set_status("200");
     _response.set_info("OK");
+
+    close(fd);
     return HTTPCode::HTTP_OK;
 }
 

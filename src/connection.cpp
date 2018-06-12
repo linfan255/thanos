@@ -44,6 +44,14 @@ Connection::Connection() : _read_buffer(), _write_buffer(), _connfd(-1) {}
 
 Connection::~Connection() = default;
 
+void Connection::_reset() {
+    _read_buffer.clear();
+    _write_buffer.clear();
+    if (!_clear()) {
+        LOG(WARNING) << "[Connection::_reset]: _clear";
+    }
+}
+
 void Connection::set_connfd(int connfd) {
     _connfd = connfd;
 }
@@ -78,6 +86,9 @@ bool Connection::connection_read() {
         LOG(WARNING) << "[Connection::connection_read]: invalid fd";
         return false;
     }
+    if (!_read_buffer.empty()) {
+        _read_buffer.clear();
+    }
 
     uint64_t buffer_size = 2048;
     int ret = 0;
@@ -110,6 +121,7 @@ bool Connection::connection_write() {
             LOG(WARNING) << "[Connection::connection_write]: mod_fd failed";
             return false;
         }
+        _reset();
         return true;
     }
 
@@ -120,24 +132,33 @@ bool Connection::connection_write() {
             return false;
         }
 
-        ret = send(_connfd, _write_buffer.current_addr(), _write_buffer.size(), 0);
+        ret = send(_connfd, _write_buffer.current_addr(), _write_buffer.left_bytes(), 0);
 
-        if (ret == -1 && errno != EINTR) {
-            LOG(WARNING) << "[Connection::connection_write]: send failed";
-            return false;
+        if (ret == 0) {
+            if (!FdHandler::mod_fd(_epollfd, _connfd, EPOLLIN)) {
+                LOG(WARNING) << "[Connection::connection_write]: mod_fd to EPOLLIN failed";
+                return false;
+            }
+            _reset();
+            return true;
         }
-        if (ret == _write_buffer.size()) {
-            break;
-        }
-        if (ret == 0) { // 发送0字节，可能没发送连接就断开了
-            LOG(WARNING) << "[Connection::connection_write]: send 0 bytes";
-            return false;
+
+        if (ret <= -1) {
+            if (errno == EAGAIN) {
+                if (!FdHandler::mod_fd(_epollfd, _connfd, EPOLLIN)) {
+                    LOG(WARNING) << "[Connection::connection_write]: mod_fd to EPOLLIN failed";
+                    return false;
+                }
+                _reset();
+                return true;
+            } else {
+                return false;
+            }
         }
         _write_buffer.roll_nbytes(ret);
     }
 
-    _read_buffer.clear();
-    _write_buffer.clear();
+    _reset();
     return true;
 }
 
@@ -145,6 +166,9 @@ bool Connection::_dump_read(Buffer* other) {
     if (other == nullptr) {
         LOG(WARNING) << "[Connection::_dump_read]: dump read_buffer to no where";
         return false;
+    }
+    if (!other->empty()) {
+        other->clear();
     }
     if (!_read_buffer.dump(other)) {
         LOG(WARNING) << "[Connection::_dump_read]: dump read_buffer failed";
@@ -158,6 +182,9 @@ bool Connection::_dump_write(Buffer* other) {
         LOG(WARNING) << "[Connection::_dump_write]: dump write_buffer to no where";
         return false;
     }
+    if (!other->empty()) {
+        other->clear();
+    }
     if (!_write_buffer.dump(other)) {
         LOG(WARNING) << "[Connection::_dump_write]: dump write_buffer failed";
         return false;
@@ -166,6 +193,9 @@ bool Connection::_dump_write(Buffer* other) {
 }
 
 bool Connection::_dump_to_read(Buffer& other) {
+    if (!_read_buffer.empty()) {
+        _read_buffer.clear();
+    }
     if (!other.dump(&_read_buffer)) {
         LOG(WARNING) << "[Connection::_dump_to_read]: dump to read failed";
         return false;
@@ -174,6 +204,9 @@ bool Connection::_dump_to_read(Buffer& other) {
 }
 
 bool Connection::_dump_to_write(Buffer& other) {
+    if (!_write_buffer.empty()) {
+        _write_buffer.clear();
+    }
     if (!other.dump(&_write_buffer)) {
         LOG(WARNING) << "[Connection::_dump_to_write]: dump to write failed";
         return false;

@@ -33,6 +33,7 @@ public:
     BufferReadStatus get_line(std::string* line);
     bool read_until_end(std::string* content);
     void* current_addr() const;
+    uint64_t left_bytes() const;
 
     void show_content() const;
 

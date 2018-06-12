@@ -10,7 +10,7 @@ HTTPMessage::HTTPMessage() :
 
 HTTPMessage::~HTTPMessage() {
     if (_body != nullptr) {
-        delete _body;
+        delete [] _body;
     }
     _body_len = 0;
 }
@@ -45,6 +45,14 @@ HTTPMessage& HTTPMessage::operator=(HTTPMessage&& other) {
         other._body_len = 0;
     }
     return *this;
+}
+
+void HTTPMessage::clear() {
+    _headers.clear();
+    _body_len = 0;
+    if (_body != nullptr) {
+        delete [] _body;
+    }
 }
 
 const std::map<std::string, std::string>& HTTPMessage::get_headers() const {
@@ -110,6 +118,13 @@ HTTPRequest& HTTPRequest::operator=(HTTPRequest&& other) {
     return *this;
 }
 
+void HTTPRequest::clear() {
+    HTTPMessage::clear();
+    _method.clear();
+    _url.clear();
+    _version.clear();
+}
+
 const std::string& HTTPRequest::get_method() const {
     return _method;
 }
@@ -169,6 +184,13 @@ HTTPResponse& HTTPResponse::operator=(HTTPResponse&& other) {
         _info = std::move(other._info);
     }
     return *this;
+}
+
+void HTTPResponse::clear() {
+    HTTPMessage::clear();
+    _version.clear();
+    _status.clear();
+    _info.clear();
 }
 
 const std::string& HTTPResponse::get_version() const {

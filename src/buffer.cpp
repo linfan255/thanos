@@ -61,6 +61,14 @@ uint64_t Buffer::size() const {
     return _buffer.size();
 }
 
+uint64_t Buffer::left_bytes() const {
+    if (_cursor > _buffer.size()) {
+        LOG(WARNING) << "[Buffer::left_bytes]: _cursor out of bound";
+        return 0;
+    }
+    return _buffer.size() - _cursor;
+}
+
 void Buffer::push_nbytes(const char* buffer, uint64_t nbytes) {
     _buffer.insert(_buffer.end(), buffer, buffer + nbytes);
 }
@@ -70,8 +78,8 @@ void Buffer::roll_nbytes(uint64_t nbytes) {
 }
 
 void* Buffer::current_addr() const {
-    if (_buffer.empty() || _cursor >= _buffer.size()) {
-        LOG(WARNING) << "[Buffer::current_addr]: _cursor wrong position";
+    if (_buffer.empty()) {
+        LOG(WARNING) << "[Buffer::current_addr]: buffer is empty";
         return nullptr;
     }
     char* addr = const_cast<char*>(&_buffer[_cursor]);
