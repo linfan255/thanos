@@ -12,6 +12,13 @@ Buffer::Buffer(const Buffer& other) :
         _buffer(other._buffer), 
         _cursor(other._cursor) {}
 
+void Buffer::show_content() const {
+    std::string content = "";
+    content.assign(_buffer.begin(), _buffer.end());
+    LOG(DEBUG) << "BUFFER CONTENT:";
+    LOG(INFO) << content;
+}
+
 Buffer& Buffer::operator=(const Buffer& other) {
     if (this == &other) {
         return *this;

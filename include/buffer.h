@@ -34,6 +34,8 @@ public:
     bool read_until_end(std::string* content);
     void* current_addr() const;
 
+    void show_content() const;
+
 private:
     uint64_t _cursor; // 记录当前读的位置
     std::vector<char> _buffer;

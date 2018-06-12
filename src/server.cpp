@@ -100,6 +100,7 @@ bool Server::init(const std::string& conf_path) {
 }
 
 bool Server::uninit() {
+    LOG(DEBUG) << "begin uninit";
     for (auto it = _connections.begin(); it != _connections.end(); ++it) {
         if (it->second != nullptr) {
             delete (it->second);
@@ -173,6 +174,7 @@ bool Server::run() {
 bool Server::_handle_event(const epoll_event& ev) {
     if (ev.data.fd == _listenfd) {
         // 新的连接
+        LOG(DEBUG) << "accept new connection:" << ev.data.fd;
         if (_is_running) {
             if (!_handle_accept()) {
                 LOG(WARNING) << "[Server::_handle_event]: _handle_accept failed";
@@ -185,14 +187,22 @@ bool Server::_handle_event(const epoll_event& ev) {
         }
     } else if (ev.events & EPOLLIN) {
         // 发生可读事件
+        LOG(DEBUG) << "handle readable event:" << ev.data.fd;
         if (!_handle_readable(ev)) {
             LOG(WARNING) << "[Server::_handle_event]: _handle_readable failed";
             return false;
         }
     } else if (ev.events & EPOLLOUT) {
         // 发生可写事件
+        LOG(DEBUG) << "handle writable event:" << ev.data.fd;
         if (!_handle_writable(ev)) {
             LOG(WARNING) << "[Server::_handle_event]: _handle_writable failed";
+            return false;
+        }
+    } else if (ev.events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)) {
+        LOG(DEBUG) << "handle close event:" << ev.data.fd;
+        if (!_close_connection(ev.data.fd)) {
+            LOG(WARNING) << "[Server::_handle_event]: _close_connection";
             return false;
         }
     } else {
@@ -212,14 +222,11 @@ bool Server::_handle_accept() {
         return false;
     }
 
-    LOG(DEBUG) << "handle new accept " << connfd;
-
     // 初始化该描述符对应的连接，如果不存在则新建
     if (_connections.find(connfd) == _connections.end() ||
             _connections[connfd] == nullptr) {
         // 描述符无对应的连接，或者连接池中无该描述符
         // 使用prototype模式来实例化
-        LOG(DEBUG) << "new connection instance";
         _connections[connfd] = Connection::new_instance();
         if (_connections[connfd] == nullptr) {
             LOG(WARNING) << "[Server::_handle_accept]: alloc memory failed";
@@ -240,8 +247,6 @@ bool Server::_handle_accept() {
 }
 
 bool Server::_handle_readable(const epoll_event& ev) {
-    LOG(DEBUG) << "handle readable";
-
     int sockfd = ev.data.fd;
     // 判断发生事件的描述符是否在连接池当中
     if (_connections.find(sockfd) == _connections.end() ||
@@ -269,8 +274,6 @@ bool Server::_handle_readable(const epoll_event& ev) {
 }
     
 bool Server::_handle_writable(const epoll_event& ev) {
-    LOG(DEBUG) << "handle writable";
-
     int sockfd = ev.data.fd;
     if (_connections.find(sockfd) == _connections.end() ||
             _connections[sockfd] == nullptr) {
@@ -287,11 +290,12 @@ bool Server::_handle_writable(const epoll_event& ev) {
         return false;
     }
 
+    /*
     if (!_connections[sockfd]->connection_close()) {
-        // 如果连接是长连接，则在connection_close中立即返回，并不关闭。
         LOG(WARNING) << "[Server::_handle_writable]: connection close failed";
         return false;
     }
+    */
     return true;
 }
 

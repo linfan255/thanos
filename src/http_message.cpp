@@ -64,10 +64,6 @@ void HTTPMessage::add_header(const std::string& key, const std::string& val) {
 }
 
 bool HTTPMessage::set_body(char* body) {
-    if (body == nullptr) {
-        LOG(WARNING) << "[HTTPMessage::set_body]: body is empty";
-        return false;
-    }
     _body = body;
     return true;
 }

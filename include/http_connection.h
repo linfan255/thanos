@@ -20,7 +20,6 @@ protected:
 
     Connection* _clone() override;
     bool _clear() override;
-    bool _is_keep_alive() override;
 
     static HTTPConnection _http_connection;
 
@@ -45,7 +44,6 @@ private:
     HTTPRequest _request;
     HTTPResponse _response;
     ParseStatus _parse_status;
-    bool _connection;
 
     // disallow copy & assign
     HTTPConnection(const HTTPConnection& other);

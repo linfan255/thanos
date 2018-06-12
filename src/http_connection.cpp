@@ -17,23 +17,17 @@ HTTPConnection HTTPConnection::_http_connection;
 std::map<std::string, std::string> HTTPConnection::_mime_type;
 
 HTTPConnection::HTTPConnection() : 
-        _request(), _response(), _connection(true),
-        _parse_status(ParseStatus::PARSE_REQUEST_LINE) {
+        _request(), _response(), _parse_status(ParseStatus::PARSE_REQUEST_LINE) {
     _add_prototype(this);
 }
 
 HTTPConnection::HTTPConnection(int dummy) : 
-        _request(), _response(), _connection(true),
-        _parse_status(ParseStatus::PARSE_REQUEST_LINE) {}
+        _request(), _response(), _parse_status(ParseStatus::PARSE_REQUEST_LINE) {}
 
 HTTPConnection::~HTTPConnection() = default;
 
 Connection* HTTPConnection::_clone() {
     return new HTTPConnection(5);
-}
-
-bool HTTPConnection::_is_keep_alive() {
-    return _connection;
 }
 
 void HTTPConnection::_init_mime() {
@@ -65,6 +59,9 @@ void HTTPConnection::process() {
         _error_response(HTTPCode::HTTP_INTERNAL_ERROR);
         return;
     }
+
+    // DEBUG
+    read_buffer.show_content();
 
     // 2、解析请求
     _parse_request(read_buffer);
@@ -344,13 +341,6 @@ bool HTTPConnection::_parse_header(const std::string& line) {
         return false;
     }
 
-    if (key == "Connection") {
-        if (val == "keep-alive") {
-            _connection = true;
-        } else {
-            _connection = false;
-        }
-    }
     _request.add_header(key, val);
     return true;
 }
