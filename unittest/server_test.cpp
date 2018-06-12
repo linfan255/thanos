@@ -32,6 +32,7 @@ protected:
     }
 
     bool _clear() override {}
+    bool _is_keep_alive() override {}
 
 private:
     static EchoConnection _echo_connection;

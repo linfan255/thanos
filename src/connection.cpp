@@ -56,6 +56,12 @@ bool Connection::connection_close() {
     _read_buffer.clear();
     _write_buffer.clear();
 
+    if (_is_keep_alive()) {
+        // 如果经业务逻辑模块判断是长连接的话
+        // 直接返回即可
+        return true;
+    }
+
     if (!FdHandler::remove_fd(_epollfd, _connfd)) {
         LOG(WARNING) << "[Connection::connection_close]: remove failed";
         return false;

@@ -17,17 +17,23 @@ HTTPConnection HTTPConnection::_http_connection;
 std::map<std::string, std::string> HTTPConnection::_mime_type;
 
 HTTPConnection::HTTPConnection() : 
-        _request(), _response(), _parse_status(ParseStatus::PARSE_REQUEST_LINE) {
+        _request(), _response(), _connection(true),
+        _parse_status(ParseStatus::PARSE_REQUEST_LINE) {
     _add_prototype(this);
 }
 
 HTTPConnection::HTTPConnection(int dummy) : 
-        _request(), _response(), _parse_status(ParseStatus::PARSE_REQUEST_LINE) {}
+        _request(), _response(), _connection(true),
+        _parse_status(ParseStatus::PARSE_REQUEST_LINE) {}
 
 HTTPConnection::~HTTPConnection() = default;
 
 Connection* HTTPConnection::_clone() {
     return new HTTPConnection(5);
+}
+
+bool HTTPConnection::_is_keep_alive() {
+    return _connection;
 }
 
 void HTTPConnection::_init_mime() {
@@ -41,7 +47,8 @@ void HTTPConnection::_init_mime() {
     while (std::getline(mime_file, line)) {
         ss.str(line);
         ss >> mime_type >> ext_name;
-        _mime_type[mime_type] = ext_name;
+        ss.clear();
+        _mime_type[ext_name] = mime_type;
     }
 }
 
@@ -75,7 +82,6 @@ void HTTPConnection::process() {
     // 3、根据请求方法转到相应的句柄，在相应的句柄中生成响应报文(类形式)
     HTTPCode code = _handle_request();
     if (code != HTTPCode::HTTP_OK) {
-        LOG(WARNING) << "[HTTPConnection::process]: handle request failed";
         _error_response(code);
         return;
     }
@@ -211,7 +217,13 @@ void HTTPConnection::_parse_request(Buffer& buffer) {
     std::string line = "";
     BufferReadStatus line_status = BufferReadStatus::READ_SUCCESS; // 从状态机
 
-    while ((line_status = buffer.get_line(&line)) == BufferReadStatus::READ_SUCCESS) {
+    while (true) {
+        line_status = buffer.get_line(&line);
+        if (line_status != BufferReadStatus::READ_SUCCESS && 
+                line_status != BufferReadStatus::READ_END) {
+            break;
+        }
+
         switch (_parse_status) {
         case ParseStatus::PARSE_REQUEST_LINE:
             if (!_parse_request_line(line)) {
@@ -234,6 +246,7 @@ void HTTPConnection::_parse_request(Buffer& buffer) {
 
         if (_parse_status == ParseStatus::PARSE_BODY) {
             if (!_parse_body(buffer)) {
+                LOG(WARNING) << "[HTTPConnection::_parse_request]:parse body failed";
                 _parse_status = ParseStatus::PARSE_ERROR;
                 return;
             }
@@ -241,6 +254,9 @@ void HTTPConnection::_parse_request(Buffer& buffer) {
         }
         if (_parse_status == ParseStatus::PARSE_DONE) {
             return;
+        }
+        if (line_status == BufferReadStatus::READ_END) {
+            break;
         }
         line.clear();
     }
@@ -253,8 +269,7 @@ void HTTPConnection::_parse_request(Buffer& buffer) {
 
 bool HTTPConnection::_parse_request_line(const std::string& line) {
     if (line.empty()) {
-        LOG(WARNING) << "[HTTPConnection::_parse_request_line]: line empty";
-        return false;
+        return true;
     }
     std::string method = "";
     std::string url = "";
@@ -270,7 +285,7 @@ bool HTTPConnection::_parse_request_line(const std::string& line) {
 
     std::string::size_type second_blank = line.find(" ", first_blank + 1);
     if (second_blank == 0 || second_blank == line.length() - 1 || 
-            second_blank == std::string::npos) {
+            second_blank == std::string::npos || second_blank <= first_blank) {
         LOG(WARNING) << "[HTTPConnection::_parse_request_line]: second blank illegal";
         return false;
     }
@@ -281,7 +296,7 @@ bool HTTPConnection::_parse_request_line(const std::string& line) {
         return false;
     }
 
-    url = line.substr(first_blank + 1, second_blank);
+    url = line.substr(first_blank + 1, second_blank - first_blank - 1);
     if (url.empty()) {
         LOG(WARNING) << "[HTTPConnection::_parse_request_line]: url illegal";
         return false;
@@ -301,24 +316,40 @@ bool HTTPConnection::_parse_request_line(const std::string& line) {
 
 bool HTTPConnection::_parse_header(const std::string& line) {
     if (line.empty()) {
-        LOG(WARNING) << "[HTTPConnection::_parse_header]: line empty";
-        return false;
+        return true;
     }
-    std::string::size_type colon = line.find(":");
-    if (colon == 0 || colon == line.length() - 1 || colon == std::string::npos) {
+
+    std::string::size_type start = 0;
+    std::string::size_type tail = line.find(":");
+    if (tail == std::string::npos) {
         LOG(WARNING) << "[HTTPConnection::_parse_header]: cannot find colon";
         return false;
     }
+    while (line[start++] == ' ');
+    while (line[--tail] == ' ');
 
-    std::string key = line.substr(0, colon);
+    std::string key = line.substr(start - 1, tail - start + 2);
     if (key.empty()) {
         LOG(WARNING) << "[HTTPConnection::_parse_header]: key is empty";
         return false;
     }
-    std::string val = line.substr(colon + 1);
+
+    start = line.find(":") + 1;
+    tail = line.length();
+    while (line[start++] == ' ');
+    while (line[--tail] == ' ');
+    std::string val = line.substr(start - 1, tail - start + 2);
     if (val.empty()) {
         LOG(WARNING) << "[HTTPConnection::_parse_header]: value is empty";
         return false;
+    }
+
+    if (key == "Connection") {
+        if (val == "keep-alive") {
+            _connection = true;
+        } else {
+            _connection = false;
+        }
     }
     _request.add_header(key, val);
     return true;
@@ -363,6 +394,7 @@ HTTPCode HTTPConnection::_handle_get() {
 
     struct stat file_stat;
     if (stat(file_path.c_str(), &file_stat) < 0) {
+        LOG(DEBUG) << "connot find this file:*" << file_path << "*";
         return HTTPCode::HTTP_NOT_FOUND;
     }
     if (!(file_stat.st_mode & S_IROTH)) {
@@ -388,12 +420,13 @@ HTTPCode HTTPConnection::_handle_get() {
     _response.set_body_len(file_stat.st_size);
 
     // 2、响应报头
-    std::string ext_name = file_path.substr(file_path.find("."));
+    std::string ext_name = file_path.substr(file_path.find(".") + 1);
     if (_mime_type.find(ext_name) == _mime_type.end()) {
         _init_mime();
     }
     if (_mime_type.find(ext_name) == _mime_type.end()) {
-        LOG(WARNING) << "[HTTPConnection::_handle_get]: mime type illegal";
+        LOG(WARNING) << "[HTTPConnection::_handle_get]: mime type illegal, "
+                << "extend name:" << ext_name;
         return HTTPCode::HTTP_INTERNAL_ERROR;
     }
     _response.add_header("Content-Type", _mime_type[ext_name]);

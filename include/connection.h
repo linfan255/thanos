@@ -33,6 +33,7 @@ protected:
 
     virtual Connection* _clone() = 0; // prototype模式所需，用于返回实例化的对象指针
     virtual bool _clear() = 0; // 用于告诉框架子类在断开连接后需要进行哪些处理
+    virtual bool _is_keep_alive() = 0; // 用于从框架子类出获得是否是长连接的信息
     bool _process_done();      // 告诉框架业务逻辑处理完毕，可以写了
 
     bool _dump_read(Buffer* other);    // read/write buffer --> other
