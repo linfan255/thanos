@@ -16,7 +16,7 @@ HTTPMessage::~HTTPMessage() {
 }
 
 HTTPMessage::HTTPMessage(const HTTPMessage& other) :
-        _headers(other._headers), _body(other.body), _body_len(other._body_len) {}
+        _headers(other._headers), _body(other._body), _body_len(other._body_len) {}
 
 HTTPMessage& HTTPMessage::operator=(const HTTPMessage& other) {
     if (this != &other) {
@@ -27,7 +27,7 @@ HTTPMessage& HTTPMessage::operator=(const HTTPMessage& other) {
     return *this;
 }
 
-HTTPMessage::HTTPMessage(const HTTPMessage&& other) :
+HTTPMessage::HTTPMessage(HTTPMessage&& other) :
         _headers(std::move(other._headers)), 
         _body(other._body), 
         _body_len(other._body_len) {
@@ -35,7 +35,7 @@ HTTPMessage::HTTPMessage(const HTTPMessage&& other) :
     other._body_len = 0;
 }
 
-HTTPMessage& HTTPMessage::operator=(const HTTPMessage&& other) {
+HTTPMessage& HTTPMessage::operator=(HTTPMessage&& other) {
     if (this != &other) {
         _headers = std::move(other._headers);
         _body = other._body;
@@ -47,7 +47,7 @@ HTTPMessage& HTTPMessage::operator=(const HTTPMessage&& other) {
     return *this;
 }
 
-std::map<std::string, std::string>& HTTPMessage::get_headers() const {
+const std::map<std::string, std::string>& HTTPMessage::get_headers() const {
     return _headers;
 }
 
@@ -80,7 +80,7 @@ void HTTPMessage::set_body_len(uint64_t body_len) {
 
 HTTPRequest::HTTPRequest() : HTTPMessage(), _method(""), _url(""), _version("") {}
 
-HTTPResquest::~HTTPRequest() = default;
+HTTPRequest::~HTTPRequest() = default;
 
 HTTPRequest::HTTPRequest(const HTTPRequest& other) :
         HTTPMessage(other), 
@@ -98,13 +98,13 @@ HTTPRequest& HTTPRequest::operator=(const HTTPRequest& other) {
     return *this;
 }
 
-HTTPRequest::HTTPRequest(const HTTPRequest&& other) :
+HTTPRequest::HTTPRequest(HTTPRequest&& other) :
         HTTPMessage(std::move(other)), 
         _method(std::move(other._method)), 
         _url(std::move(other._url)), 
         _version(std::move(other._version)) {}
 
-HTTPRequest& HTTPRequest::operator=(const HTTPRequest&& other) {
+HTTPRequest& HTTPRequest::operator=(HTTPRequest&& other) {
     if (this != &other) {
         HTTPMessage::operator=(std::move(other));
         _method = std::move(other._method);
@@ -114,15 +114,15 @@ HTTPRequest& HTTPRequest::operator=(const HTTPRequest&& other) {
     return *this;
 }
 
-std::string& HTTPRequest::get_method() const {
+const std::string& HTTPRequest::get_method() const {
     return _method;
 }
 
-std::string& HTTPRequest::get_url() const {
+const std::string& HTTPRequest::get_url() const {
     return _url;
 }
 
-std::string& HTTPReuqest::get_version() const {
+const std::string& HTTPRequest::get_version() const {
     return _version;
 }
 
@@ -149,7 +149,7 @@ HTTPResponse::HTTPResponse(const HTTPResponse& other) :
         _status(other._status),
         _info(other._info) {}
 
-HTTPResponse& operator=(const HTTPResponse& other) {
+HTTPResponse& HTTPResponse::operator=(const HTTPResponse& other) {
     if (this != &other) {
         HTTPMessage::operator=(other);
         _version = other._version;
@@ -159,13 +159,13 @@ HTTPResponse& operator=(const HTTPResponse& other) {
     return *this;
 }
 
-HTTPResponse::HTTPResponse(const HTTPResponse&& other) :
+HTTPResponse::HTTPResponse(HTTPResponse&& other) :
         HTTPMessage(std::move(other)),
         _version(std::move(other._version)),
         _status(std::move(other._status)),
         _info(std::move(other._info)) {}
 
-HTTPResponse& HTTPResponse::operator=(const HTTPResponse&& other) {
+HTTPResponse& HTTPResponse::operator=(HTTPResponse&& other) {
     if (this != &other) {
         HTTPMessage::operator=(std::move(other));
         _version = std::move(other._version);
@@ -175,15 +175,15 @@ HTTPResponse& HTTPResponse::operator=(const HTTPResponse&& other) {
     return *this;
 }
 
-std::string& HTTPResponse::get_version() const {
+const std::string& HTTPResponse::get_version() const {
     return _version;
 }
 
-std::string& HTTPResponse::get_status() const {
+const std::string& HTTPResponse::get_status() const {
     return _status;
 }
 
-std::string& HTTPResponse::get_info() const {
+const std::string& HTTPResponse::get_info() const {
     return _info;
 }
 

@@ -48,6 +48,7 @@ bool Server::_listen_at_port() {
 }
 
 bool Server::_close_connection(int fd) {
+    LOG(DEBUG) << "close connection " << fd;
     if (_connections.find(fd) == _connections.end() ||
             _connections[fd] == nullptr) {
         LOG(WARNING) << "[Server::_close_connection]: cannot find fd:" << fd;
@@ -80,6 +81,7 @@ bool Server::init(const std::string& conf_path) {
         _max_events = _conf["MAX_EVENTS"].to_int32();
         _max_thread_num = _conf["MAX_THREAD_NUM"].to_int32();
         _max_requests = _conf["MAX_REQUESTS"].to_int32();
+        _root_dir = _conf["ROOT_DIR"].to_string();
     } catch (std::exception err) {
         LOG(WARNING) << err.what();
         return false;
@@ -90,6 +92,9 @@ bool Server::init(const std::string& conf_path) {
         LOG(WARNING) << "[Server::init]: _threadpool.init failed";
         return false;
     }
+
+    // 4、初始化Connection的根目录
+    Connection::init_root_dir(_root_dir);
     
     return true;
 }
@@ -199,8 +204,6 @@ bool Server::_handle_event(const epoll_event& ev) {
 }
 
 bool Server::_handle_accept() {
-    LOG(DEBUG) << "handle new accept";
-
     sockaddr_in client_addr;
     socklen_t addr_len = sizeof(client_addr);
     int connfd = accept(_listenfd, reinterpret_cast<sockaddr*>(&client_addr), &addr_len);
@@ -209,11 +212,14 @@ bool Server::_handle_accept() {
         return false;
     }
 
+    LOG(DEBUG) << "handle new accept " << connfd;
+
     // 初始化该描述符对应的连接，如果不存在则新建
     if (_connections.find(connfd) == _connections.end() ||
             _connections[connfd] == nullptr) {
         // 描述符无对应的连接，或者连接池中无该描述符
         // 使用prototype模式来实例化
+        LOG(DEBUG) << "new connection instance";
         _connections[connfd] = Connection::new_instance();
         if (_connections[connfd] == nullptr) {
             LOG(WARNING) << "[Server::_handle_accept]: alloc memory failed";
@@ -221,6 +227,7 @@ bool Server::_handle_accept() {
         }
     } else {
         // 连接池中存在该描述符对应的连接, 就将其关闭
+        LOG(DEBUG) << "connection already exist";
         _connections[connfd]->connection_close(); 
     }
 

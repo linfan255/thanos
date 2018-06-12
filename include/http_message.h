@@ -16,18 +16,18 @@ public:
     HTTPMessage(const HTTPMessage& other);
     HTTPMessage& operator=(const HTTPMessage& other);
 
-    HTTPMessage(const HTTPMessage&& other);
-    HTTPMessage& operator=(const HTTPMessage&& other);
+    HTTPMessage(HTTPMessage&& other);
+    HTTPMessage& operator=(HTTPMessage&& other);
 
     // get
-    std::map<std::string, std::string>& get_headers() const;
+    const std::map<std::string, std::string>& get_headers() const;
     char* get_body() const;
     uint64_t get_body_len() const;
 
     // set
     void add_header(const std::string& key, const std::string& val);
     bool set_body(char* body);
-    void set_body_len();
+    void set_body_len(uint64_t body_len);
 
 private:
     std::map<std::string, std::string> _headers;
@@ -47,13 +47,13 @@ public:
     HTTPRequest& operator=(const HTTPRequest& other);
 
     // move ctor & assign
-    HTTPRequest(const HTTPRequest&& other);
-    HTTPRequest& operator=(const HTTPRequest& other);
+    HTTPRequest(HTTPRequest&& other);
+    HTTPRequest& operator=(HTTPRequest&& other);
 
     // get
-    std::string& get_method() const;
-    std::string& get_url() const;
-    std::string& get_version() const;
+    const std::string& get_method() const;
+    const std::string& get_url() const;
+    const std::string& get_version() const;
 
     // set
     void set_method(const std::string& method);
@@ -77,13 +77,13 @@ public:
     HTTPResponse& operator=(const HTTPResponse& other);
 
     // move ctor & assign
-    HTTPResponse(const HTTPResponse&& other);
-    HTTPResponse& operator=(const HTTPResponse&& other);
+    HTTPResponse(HTTPResponse&& other);
+    HTTPResponse& operator=(HTTPResponse&& other);
 
     // get
-    std::string& get_version() const;
-    std::string& get_status() const;
-    std::string& get_info() const;
+    const std::string& get_version() const;
+    const std::string& get_status() const;
+    const std::string& get_info() const;
     // set
     void set_version(const std::string& version);
     void set_status(const std::string& status);

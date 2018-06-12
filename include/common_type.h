@@ -16,6 +16,7 @@ enum class ParseStatus {
     PARSE_DONE = 0,         // parse done
     PARSE_HEADER = 1,       // parsing headers
     PARSE_REQUEST_LINE = 2, // parsing request line
+    PARSE_BODY = 3,         // parsing body
     PARSE_ERROR = -1,       // parsing error
 };
 
@@ -23,6 +24,7 @@ enum class HTTPCode {
     HTTP_OK = 200,
     HTTP_BAD_REQUEST = 400,
     HTTP_FORBIDDEN = 403,
+    HTTP_NOT_FOUND = 404,
     HTTP_METHOD_NOT_ALLOWED = 405,
     HTTP_INTERNAL_ERROR = 500,
 };

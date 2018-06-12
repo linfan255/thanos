@@ -1,4 +1,5 @@
 #include <cstring>
+#include <cstdio>
 #include <errno.h>
 #include <stdint.h>
 #include <sys/types.h>
@@ -13,7 +14,7 @@ Connection* Connection::_prototype = nullptr;
 
 int Connection::_epollfd = -1;
 
-std::string Connection::root_dir = "";
+std::string Connection::_root_dir = "";
 
 std::string& Connection::_get_root_dir() {
     return _root_dir; 
@@ -86,14 +87,15 @@ bool Connection::connection_read() {
         memset(buffer, 0, sizeof(char) * buffer_size);
         ret = recv(_connfd, buffer, buffer_size, 0);
 
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            LOG(DEBUG) << "read EAGIN or EWOULDBLOCK";
-            break;
-        }
-
-        if (ret == -1 || ret == 0) {
-            LOG(WARNING) << "[Connection::connection_read]: "
-                    << "recv failed or client close connection";
+        if (ret == -1) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                LOG(DEBUG) << "read EAGIN or EWOULDBLOCK";
+                break;
+            }
+            LOG(WARNING) << "[Connection::connection_read]: recv failed";
+            return false;
+        } else if (ret == 0) {
+            LOG(WARNING) << "[Connection::connection_read]: client close connection";
             return false;
         }
 

@@ -46,6 +46,7 @@ bool Buffer::dump(Buffer* other) {
 
     other->_cursor = std::move(_cursor);
     other->_buffer = std::move(_buffer);
+    _cursor = 0;
     return true;
 }
 
@@ -53,7 +54,7 @@ uint64_t Buffer::size() const {
     return _buffer.size();
 }
 
-void Buffer::push_nbytes(char* buffer, uint64_t nbytes) {
+void Buffer::push_nbytes(const char* buffer, uint64_t nbytes) {
     _buffer.insert(_buffer.end(), buffer, buffer + nbytes);
 }
 
@@ -77,6 +78,21 @@ void Buffer::clear() {
 
 bool Buffer::empty() const {
     return _buffer.empty();
+}
+
+bool Buffer::read_until_end(std::string* content) {
+    if (content == nullptr) {
+        LOG(WARNING) << "[Buffer::read_until_end]: parameter is nullptr";
+        return false;
+    }
+    if (_cursor > _buffer.size()) {
+        LOG(WARNING) << "[Buffer::read_until_end]: _cursor out of bound";
+        return false;
+    }
+
+    uint64_t len = _buffer.size();
+    content->assign(&_buffer[_cursor], &_buffer[len]);
+    return true;
 }
 
 BufferReadStatus Buffer::get_line(std::string* line) {
@@ -114,7 +130,7 @@ BufferReadStatus Buffer::get_line(std::string* line) {
     line->assign(&_buffer[_cursor], &_buffer[i]);
 
     // ignore the \r and \n
-    for (_cursor = i; _cursor < len; ++_cursor) {
+    for (_cursor = i; _cursor < len && _cursor < i + 2; ++_cursor) {
         if (_buffer[_cursor] != 13 && _buffer[_cursor] != 10) {
             break;
         }

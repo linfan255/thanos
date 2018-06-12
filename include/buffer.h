@@ -27,10 +27,11 @@ public:
     void clear();
     bool dump(Buffer* other);
 
-    void push_nbytes(char* buffer, uint64_t nbytes);
+    void push_nbytes(const char* buffer, uint64_t nbytes);
     void roll_nbytes(uint64_t nbytes);
 
     BufferReadStatus get_line(std::string* line);
+    bool read_until_end(std::string* content);
     void* current_addr() const;
 
 private:

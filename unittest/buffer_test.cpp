@@ -51,10 +51,12 @@ TEST_F(BufferTest, Case_2) {
     char line2[] = "Host: localhost:8080\r\n";
     char line3[] = "Connection: keep-alive\r\n";
     char line4[] = "\r\n";
+    char line5[] = "hello world, this is the last line";
     buffer.push_nbytes(line1, strlen(line1));
     buffer.push_nbytes(line2, strlen(line2));
     buffer.push_nbytes(line3, strlen(line3));
     buffer.push_nbytes(line4, strlen(line4));
+    buffer.push_nbytes(line5, strlen(line5));
     
     EXPECT_EQ(BufferReadStatus::READ_SUCCESS, buffer.get_line(&res));
     EXPECT_EQ("GET /webDemo/Hellow HTTP/1.1", res);
@@ -62,11 +64,14 @@ TEST_F(BufferTest, Case_2) {
     EXPECT_EQ(BufferReadStatus::READ_SUCCESS, buffer.get_line(&res));
     EXPECT_EQ("Host: localhost:8080", res);
 
-    EXPECT_EQ(BufferReadStatus::READ_END, buffer.get_line(&res));
+    EXPECT_EQ(BufferReadStatus::READ_SUCCESS, buffer.get_line(&res));
     EXPECT_EQ("Connection: keep-alive", res);
 
-    EXPECT_EQ(BufferReadStatus::READ_END, buffer.get_line(&res));
+    EXPECT_EQ(BufferReadStatus::READ_SUCCESS, buffer.get_line(&res));
     EXPECT_TRUE(res.empty());
+
+    EXPECT_TRUE(buffer.read_until_end(&res));
+    EXPECT_EQ("hello world, this is the last line", res);
 }
 
 // test failed

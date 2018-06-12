@@ -50,6 +50,7 @@ private:
     int _max_events;
     int _max_thread_num;
     int _max_requests;
+    std::string _root_dir; // 客户端请求的根目录
 
     // disallow copy & assign
     Server(const Server& other);
