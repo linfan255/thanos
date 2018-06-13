@@ -133,6 +133,7 @@ image/ief	ief
 image/jpeg	jpe
 image/jpeg	jpeg
 image/jpeg	jpg
+image/png	png
 image/pipeg	jfif
 image/svg+xml	svg
 image/tiff	tif
@@ -190,4 +191,8 @@ x-world/x-vrml	wrl
 x-world/x-vrml	wrz
 x-world/x-vrml	xaf
 x-world/x-vrml	xof
-
+application/x-font-woff	woff2
+application/x-font-woff woff
+image/svg+xml svg
+application/octet-stream eot
+application/octet-stream ttf

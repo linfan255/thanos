@@ -48,7 +48,6 @@ bool Server::_listen_at_port() {
 }
 
 bool Server::_close_connection(int fd) {
-    LOG(DEBUG) << "close connection " << fd;
     if (_connections.find(fd) == _connections.end() ||
             _connections[fd] == nullptr) {
         LOG(WARNING) << "[Server::_close_connection]: cannot find fd:" << fd;
@@ -100,7 +99,6 @@ bool Server::init(const std::string& conf_path) {
 }
 
 bool Server::uninit() {
-    LOG(DEBUG) << "begin uninit";
     for (auto it = _connections.begin(); it != _connections.end(); ++it) {
         if (it->second != nullptr) {
             delete (it->second);
@@ -174,7 +172,6 @@ bool Server::run() {
 bool Server::_handle_event(const epoll_event& ev) {
     if (ev.data.fd == _listenfd) {
         // 新的连接
-        LOG(DEBUG) << "accept new connection:" << ev.data.fd;
         if (_is_running) {
             if (!_handle_accept()) {
                 LOG(WARNING) << "[Server::_handle_event]: _handle_accept failed";
@@ -187,20 +184,17 @@ bool Server::_handle_event(const epoll_event& ev) {
         }
     } else if (ev.events & EPOLLIN) {
         // 发生可读事件
-        LOG(DEBUG) << "handle readable event:" << ev.data.fd;
         if (!_handle_readable(ev)) {
             LOG(WARNING) << "[Server::_handle_event]: _handle_readable failed";
             return false;
         }
     } else if (ev.events & EPOLLOUT) {
         // 发生可写事件
-        LOG(DEBUG) << "handle writable event:" << ev.data.fd;
         if (!_handle_writable(ev)) {
             LOG(WARNING) << "[Server::_handle_event]: _handle_writable failed";
             return false;
         }
     } else if (ev.events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)) {
-        LOG(DEBUG) << "handle close event:" << ev.data.fd;
         if (!_close_connection(ev.data.fd)) {
             LOG(WARNING) << "[Server::_handle_event]: _close_connection";
             return false;
@@ -222,6 +216,7 @@ bool Server::_handle_accept() {
         return false;
     }
 
+
     // 初始化该描述符对应的连接，如果不存在则新建
     if (_connections.find(connfd) == _connections.end() ||
             _connections[connfd] == nullptr) {
@@ -234,7 +229,6 @@ bool Server::_handle_accept() {
         }
     } else {
         // 连接池中存在该描述符对应的连接, 就将其关闭
-        LOG(DEBUG) << "connection already exist";
         _connections[connfd]->connection_close(); 
     }
 

@@ -60,7 +60,6 @@ void HTTPConnection::process() {
 
     // 1、取出读缓存
     if (!_dump_read(&read_buffer) || read_buffer.empty()) {
-        LOG(WARNING) << "[HTTPConnection::process]: get read buffer empty";
         _error_response(HTTPCode::HTTP_INTERNAL_ERROR);
         return;
     }
@@ -71,13 +70,11 @@ void HTTPConnection::process() {
     // 2、解析请求
     _parse_request(read_buffer);
     if (_parse_status == ParseStatus::PARSE_ERROR) {
-        LOG(WARNING) << "[HTTPConnection::process]: parse failed";
         _error_response(HTTPCode::HTTP_BAD_REQUEST);
         return;
     }
     if (_parse_status != ParseStatus::PARSE_DONE) {
         // 状态机未达到结束状态，简单返回即可
-        LOG(WARNING) << "[HTTPConnection::process]: parse not done yet";
         return;
     }
 
@@ -90,14 +87,12 @@ void HTTPConnection::process() {
 
     // 4、将类形式的响应报文转变为字节流形式
     if (!_create_response_stream(&write_buffer)) {
-        LOG(WARNING) << "[HTTPConnection::process]: create response stream failed";
         _error_response(HTTPCode::HTTP_INTERNAL_ERROR);
         return;
     }
 
     // 5、将局部变量write_buffer移动到成员变量_write_buffer中
     if (!_dump_to_write(write_buffer)) {
-        LOG(WARNING) << "[HTTPConnection::process]: dump to write failed";
         _error_response(HTTPCode::HTTP_INTERNAL_ERROR);
         return;
     }
@@ -310,9 +305,6 @@ bool HTTPConnection::_parse_request_line(const std::string& line) {
         return false;
     }
 
-    LOG(DEBUG) << "request line=" << line;
-    LOG(DEBUG) << "uri=" << url;
-
     _request.set_method(method);
     _request.set_url(url);
     _request.set_version(version);
@@ -390,11 +382,8 @@ HTTPCode HTTPConnection::_handle_get() {
         file_path += "homepage.html";
     }
 
-    LOG(DEBUG) << "file_path:" << file_path << ";";
-
     struct stat file_stat;
     if (stat(file_path.c_str(), &file_stat) < 0) {
-        LOG(DEBUG) << "connot find this file:*" << file_path << "*";
         return HTTPCode::HTTP_NOT_FOUND;
     }
     if (!(file_stat.st_mode & S_IROTH)) {
@@ -420,13 +409,13 @@ HTTPCode HTTPConnection::_handle_get() {
     _response.set_body_len(file_stat.st_size);
 
     // 2、响应报头
-    std::string ext_name = file_path.substr(file_path.find(".") + 1);
+    std::string ext_name = file_path.substr(file_path.rfind(".") + 1);
     if (_mime_type.find(ext_name) == _mime_type.end()) {
         _init_mime();
     }
     if (_mime_type.find(ext_name) == _mime_type.end()) {
         LOG(WARNING) << "[HTTPConnection::_handle_get]: mime type illegal, "
-                << "extend name:" << ext_name;
+                << "extend name:" << ext_name << " file path:" << file_path << "*";
         return HTTPCode::HTTP_INTERNAL_ERROR;
     }
     _response.add_header("Content-Type", _mime_type[ext_name]);
@@ -440,5 +429,6 @@ HTTPCode HTTPConnection::_handle_get() {
     close(fd);
     return HTTPCode::HTTP_OK;
 }
+
 
 }

@@ -100,14 +100,13 @@ bool Connection::connection_read() {
 
         if (ret == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                LOG(DEBUG) << "read EAGIN or EWOULDBLOCK";
                 break;
             }
             LOG(WARNING) << "[Connection::connection_read]: recv failed";
             return false;
         } else if (ret == 0) {
-            LOG(WARNING) << "[Connection::connection_read]: client close connection";
-            return false;
+            //LOG(WARNING) << "[Connection::connection_read]: client close connection";
+            return true;
         }
 
         _read_buffer.push_nbytes(buffer, ret * sizeof(char));
@@ -127,6 +126,15 @@ bool Connection::connection_write() {
 
     int64_t ret = 0;
     while (true) {
+        if (_write_buffer.left_bytes() == 0) {
+            if (!FdHandler::mod_fd(_epollfd, _connfd, EPOLLIN)) {
+                LOG(WARNING) << "[Connection::connection_write]: mod_fd to EPOLLIN failed";
+                return false;
+            }
+            _reset();
+            return true;
+        }
+
         if (_write_buffer.current_addr() == nullptr) {
             LOG(WARNING) << "[Connection::connection_write]: get current_addr failed";
             return false;
@@ -144,7 +152,7 @@ bool Connection::connection_write() {
         }
 
         if (ret <= -1) {
-            if (errno == EAGAIN) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 if (!FdHandler::mod_fd(_epollfd, _connfd, EPOLLIN)) {
                     LOG(WARNING) << "[Connection::connection_write]: mod_fd to EPOLLIN failed";
                     return false;
@@ -152,7 +160,10 @@ bool Connection::connection_write() {
                 _reset();
                 return true;
             } else {
-                return false;
+                //LOG(WARNING) << "[Connection::connection_write]: send failed: " << strerror(errno);
+                //return false; 向已关闭的客户端写数据会产生Broken Pipe，但是不返回错误
+                _reset();
+                return true;
             }
         }
         _write_buffer.roll_nbytes(ret);
